@@ -53,9 +53,18 @@ class ThemeRepository(private val context: Context) {
             "android.theme.customization.system_palette",
             "android.theme.customization.accent_color",
             "android.theme.customization.color_source",
+            "android.theme.customization.lockscreen_clock_font",
+            "android.theme.customization.settings",
+            "android.theme.customization.qs_panel",
+            "android.theme.customization.qs_ui",
+            "android.theme.customization.navbar",
+            "android.theme.customization.hideclock",
+            "android.theme.customization.smartspace",
+            "android.theme.customization.smartspace_offset",
+            "android.theme.customization.wallpaper",
         )
     }
-    
+
     private var cachedResponse: ThemesResponse? = null
     private var lastFetchTime: Long = 0
 
@@ -124,12 +133,12 @@ class ThemeRepository(private val context: Context) {
     }
 
     fun hasDiskCache(): Boolean = cachedResponse != null || cacheFile.exists()
-    
+
     private fun parseThemesResponse(jsonStr: String): ThemesResponse {
         val json = JSONObject(jsonStr)
         val version = json.optInt("version", 0)
         val lastUpdated = json.optString("lastUpdated", "")
-        
+
         val themes = mutableListOf<Theme>()
         val themesArr = json.optJSONArray("themes")
         if (themesArr != null) {
@@ -138,7 +147,7 @@ class ThemeRepository(private val context: Context) {
                 themes.add(parseTheme(themeObj))
             }
         }
-        
+
         val categories = mutableListOf<ThemeCategory>()
         val catArr = json.optJSONArray("categories")
         if (catArr != null) {
@@ -176,7 +185,7 @@ class ThemeRepository(private val context: Context) {
         if (overlayArr != null) {
             for (i in 0 until overlayArr.length()) {
                 val obj = overlayArr.getJSONObject(i)
-                
+
                 val targets = mutableListOf<String>()
                 val targetsArr = obj.optJSONArray("targets")
                 if (targetsArr != null) {
@@ -184,7 +193,7 @@ class ThemeRepository(private val context: Context) {
                         targets.add(targetsArr.getString(j))
                     }
                 }
-                
+
                 overlays.add(ThemeOverlay(
                     componentId = obj.optString("componentId"),
                     packageName = obj.optString("packageName"),
@@ -196,7 +205,7 @@ class ThemeRepository(private val context: Context) {
                 ))
             }
         }
-        
+
         val tags = mutableListOf<String>()
         val tagsArr = json.optJSONArray("tags")
         if (tagsArr != null) {
@@ -204,7 +213,7 @@ class ThemeRepository(private val context: Context) {
                 tags.add(tagsArr.getString(i))
             }
         }
-        
+
         val previews = mutableListOf<String>()
         val prevArr = json.optJSONArray("previewImages")
         if (prevArr != null) {
@@ -230,26 +239,26 @@ class ThemeRepository(private val context: Context) {
             supportsRegionSampling = json.optBoolean("supportsRegionSampling", false)
         )
     }
-    
+
     suspend fun getThemes(forceRefresh: Boolean = false): Result<List<Theme>> {
         return fetchThemes(forceRefresh).map { it.themes }
     }
-    
+
     suspend fun getCategories(forceRefresh: Boolean = false): Result<List<ThemeCategory>> {
         return fetchThemes(forceRefresh).map { it.categories }
     }
-    
+
     suspend fun getThemesByCategory(
-        categoryId: String, 
+        categoryId: String,
         forceRefresh: Boolean = false
     ): Result<List<Theme>> {
         return getThemes(forceRefresh).map { themes ->
             themes.filter { it.category == categoryId }
         }
     }
-    
+
     suspend fun searchThemes(
-        query: String, 
+        query: String,
         forceRefresh: Boolean = false
     ): Result<List<Theme>> {
         return getThemes(forceRefresh).map { themes ->
@@ -262,7 +271,7 @@ class ThemeRepository(private val context: Context) {
             }
         }
     }
-    
+
     fun getInstalledVersionCode(packageName: String): Int? {
         return try {
             val packageInfo = context.packageManager.getPackageInfo(packageName, 0)
@@ -271,30 +280,30 @@ class ThemeRepository(private val context: Context) {
             null
         }
     }
-    
+
     fun isThemeInstalled(packageName: String): Boolean {
         return getInstalledVersionCode(packageName) != null
     }
-    
+
     fun clearCache() {
         cachedResponse = null
         lastFetchTime = 0
     }
-    
+
     fun getInstalledThirdPartyThemes(storeThemePackages: Set<String>): List<Theme> {
         val themes = mutableListOf<Theme>()
-        
+
         try {
             val pm = context.packageManager
             val installedPackages = pm.getInstalledPackages(PackageManager.GET_META_DATA)
-            
+
             for (packageInfo in installedPackages) {
                 val packageName = packageInfo.packageName
-                
+
                 if (storeThemePackages.contains(packageName)) continue
-                
+
                 if (packageInfo.applicationInfo?.enabled == false) continue
-                
+
                 val overlayCategory = packageInfo.overlayCategory
                 val isRroTheme = packageInfo.isOverlayPackage() &&
                         overlayCategory != null &&
@@ -378,42 +387,42 @@ class ThemeRepository(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to scan for third-party themes", e)
         }
-        
+
         return themes
     }
-    
+
     private fun isThemePackage(metaData: android.os.Bundle?): Boolean {
         return metaData?.containsKey("axion_theme") == true
     }
-    
+
     private fun getThemeTargets(metaData: android.os.Bundle?): List<String> {
         if (metaData == null) return listOf("android", "systemui")
-        
+
         val targetsString = metaData.getString("axion_theme")
         if (!targetsString.isNullOrBlank()) {
             return targetsString.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         }
-        
+
         return listOf("android", "systemui")
     }
-    
+
     suspend fun getInstalledIconPacks(): List<IconPack> = withContext(Dispatchers.IO) {
         val iconPacks = mutableListOf<IconPack>()
         val pm = context.packageManager
-        
+
         val intentActions = listOf(
             "org.adw.launcher.THEMES",
             "com.teslacoilsw.launcher.THEME"
         )
-        
+
         val seenPackages = mutableSetOf<String>()
-        
+
         for (action in intentActions) {
             val intent = Intent(action)
             val formatList = pm.queryIntentActivities(intent, PackageManager.GET_META_DATA)
-            
+
             android.util.Log.d("ThemeRepository", "Icon pack query for action $action found ${formatList.size} packages")
-            
+
             for (resolveInfo in formatList) {
                 val packageName = resolveInfo.activityInfo.packageName
                 if (packageName !in seenPackages) {
@@ -421,7 +430,7 @@ class ThemeRepository(private val context: Context) {
                         val appInfo = pm.getApplicationInfo(packageName, 0)
                         val label = pm.getApplicationLabel(appInfo).toString()
                         val icon = pm.getApplicationIcon(appInfo)
-                        
+
                         iconPacks.add(IconPack(packageName, label, icon))
                         seenPackages.add(packageName)
                         android.util.Log.d("ThemeRepository", "Added icon pack: $label ($packageName)")
@@ -431,12 +440,12 @@ class ThemeRepository(private val context: Context) {
                 }
             }
         }
-        
+
         android.util.Log.d("ThemeRepository", "Total icon packs found: ${iconPacks.size}")
-        
+
         val sortedPacks = iconPacks.sortedBy { it.label }
-        
+
         listOf(IconPack("", "System Default", null)) + sortedPacks
     }
-    
+
 }
