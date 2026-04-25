@@ -91,7 +91,11 @@ fun ThemeDetailScreen(
                 tonalElevation = 3.dp,
                 shadowElevation = 1.dp
             ) {
-                Box(modifier = Modifier.padding(16.dp)) {
+                Box(
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(16.dp)
+                ) {
                     InstallSection(
                         theme = theme,
                         installState = installState,
