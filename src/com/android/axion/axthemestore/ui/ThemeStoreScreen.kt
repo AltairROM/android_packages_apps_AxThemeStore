@@ -72,6 +72,7 @@ import com.android.axion.axthemestore.ui.components.ThemePackagePreview
 import com.android.axion.axthemestore.viewmodel.ThemeStoreUiState
 import com.android.axion.axthemestore.viewmodel.ThemeStoreViewModel
 import com.android.axion.axthemestore.data.ThumbnailPreloader
+import com.android.axion.compose.scaffold.AxionLargeTopAppBar
 import com.android.axion.compose.scaffold.AxionScaffold
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -419,13 +420,10 @@ private fun BrowseScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surfaceBright,
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.themes),
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
+            AxionLargeTopAppBar(
+                title = stringResource(R.string.themes),
+                scrollBehavior = scrollBehavior,
+                containerColor = MaterialTheme.colorScheme.surfaceBright,
                 actions = {
                     IconButton(onClick = onSearchClick) {
                         Icon(
@@ -440,11 +438,6 @@ private fun BrowseScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceBright,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceBright,
-                ),
-                scrollBehavior = scrollBehavior,
             )
         },
     ) { innerPadding ->
