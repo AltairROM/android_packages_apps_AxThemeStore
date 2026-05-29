@@ -19,42 +19,19 @@ package com.android.axion.axthemestore.engine
 import android.content.Context
 import android.content.om.OverlayManager
 import android.content.res.ThemeEngine
-import android.hardware.fingerprint.FingerprintManager
-import android.hardware.fingerprint.FingerprintSensorPropertiesInternal
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.UserHandle
 import android.provider.Settings
 import android.util.Log
+import com.android.axion.deviceinfo.DeviceInfoProvider
 import org.json.JSONObject
 
 class ThemeEngineProxy(private val context: Context) {
 
-    fun isUdfpsSupported(): Boolean {
-        return try {
-            context.resources.run {
-                if (getIdentifier("config_is_powerbutton_fps", "bool", "android")
-                        .takeIf { it != 0 }?.let { getBoolean(it) } == true) {
-                    return false
-                }
-                getIdentifier("config_udfps_sensor_props", "array", "android")
-                    .takeIf { it != 0 }
-                    ?.let { getIntArray(it) }
-                    ?.takeIf { it.isNotEmpty() }
-                    ?.let { return true }
-            }
-            context.getSystemService(FingerprintManager::class.java)
-                ?.sensorPropertiesInternal
-                ?.any { it.isAnyUdfpsType } == true
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to check UDFPS support", e)
-            false
-        }
-    }
+    fun isUdfpsSupported(): Boolean = DeviceInfoProvider.isUdfpsSupported(context)
 
-    fun isUdfpsCategory(category: String): Boolean {
-        return category.contains("udfps")
-    }
+    fun isUdfpsCategory(category: String): Boolean = category.contains("udfps")
 
     companion object {
         private const val TAG = "ThemeEngineProxy"
